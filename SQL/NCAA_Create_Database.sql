@@ -1,4 +1,4 @@
-﻿﻿#-----------------------------------------------------------------
+﻿﻿﻿#-----------------------------------------------------------------
 # Databases
 #-----------------------------------------------------------------
 
@@ -166,56 +166,58 @@ ORDER BY ST.Season, ST.TeamID;
 # Create training view
 #-----------------------------------------
 CREATE VIEW vTrainingTable AS
-SELECT R.Season,
-	CASE WHEN R.WTeamID < R.LTeamID THEN R.WTeamID ELSE R.LTeamID END AS Team1,
-	CASE WHEN R.WTeamID > R.LTeamID THEN R.WTeamID ELSE R.LTeamID END AS Team2,
-	CAST( (R.WTeamID < R.LTeamID) AS UNSIGNED) AS Win,
-    WLM1.AvgWinMargin AS AvgWinMargin1,
-    WLM1.AvgLoseMargin AS AvgLoseMargin1,
-    SS1.TwoPointPct AS TwoPointPct1,
-    SS1.ThreePointPct AS ThreePointPct1,
-    SS1.FreeThrowPct AS FreeThrowPct1,
-    SS1.OffensiveRebounds AS OffensiveRebounds1,
-    SS1.DefensiveRebounds AS DefensiveRebounds1,
-    WLM2.AvgWinMargin AS AvgWinMargin2,
-    WLM2.AvgLoseMargin AS AvgLoseMargin2,
-    SS2.TwoPointPct AS TwoPointPct2,
-    SS2.ThreePointPct AS ThreePointPct2,
-    SS2.FreeThrowPct AS FreeThrowPct2,
-    SS2.OffensiveRebounds AS OffensiveRebounds2,
-    SS2.DefensiveRebounds AS DefensiveRebounds2
+SELECT
+    R.Season,
+    CASE WHEN R.WTeamID < R.LTeamID THEN R.WTeamID ELSE R.LTeamID END AS Team1,
+    CASE WHEN R.WTeamID > R.LTeamID THEN R.WTeamID ELSE R.LTeamID END AS Team2,
+    CAST( (R.WTeamID < R.LTeamID) AS UNSIGNED) AS Win,
+    WLM1.AvgWinMargin AS AvgWinMarginW,
+    WLM1.AvgLoseMargin AS AvgLoseMarginW,
+    SS1.TwoPointPct AS TwoPointPctW,
+    SS1.ThreePointPct AS ThreePointPctW,
+    SS1.FreeThrowPct AS FreeThrowPctW,
+    SS1.OffensiveRebounds AS OffensiveReboundsW,
+    SS1.DefensiveRebounds AS DefensiveReboundsW,
+    WLM2.AvgWinMargin AS AvgWinMarginL,
+    WLM2.AvgLoseMargin AS AvgLoseMarginL,
+    SS2.TwoPointPct AS TwoPointPctL,
+    SS2.ThreePointPct AS ThreePointPctL,
+    SS2.FreeThrowPct AS FreeThrowPctL,
+    SS2.OffensiveRebounds AS OffensiveReboundsL,
+    SS2.DefensiveRebounds AS DefensiveReboundsL
 FROM RegSeasonDetailedResults R
 INNER JOIN vWinLoseMargins WLM1 ON ( (R.WTeamID = WLM1.TeamID) AND (R.Season = WLM1.Season) )
 INNER JOIN vWinLoseMargins WLM2 ON ( (R.LTeamID = WLM2.TeamID) AND (R.Season = WLM2.Season) )
-INNER JOIN vSeasonStatistics SS1 ON ( (R.LTeamID = SS1.TeamID) AND (R.Season = SS1.Season) )
+INNER JOIN vSeasonStatistics SS1 ON ( (R.WTeamID = SS1.TeamID) AND (R.Season = SS1.Season) )
 INNER JOIN vSeasonStatistics SS2 ON ( (R.LTeamID = SS2.TeamID) AND (R.Season = SS2.Season) );
 
 #-----------------------------------------
 # Create test view
 #-----------------------------------------
 CREATE VIEW vTestTable AS
-SELECT T.Season,
-	CASE WHEN T.WTeamID < T.LTeamID THEN T.WTeamID ELSE T.LTeamID END AS Team1,
-	CASE WHEN T.WTeamID > T.LTeamID THEN T.WTeamID ELSE T.LTeamID END AS Team2,
-	CAST( (T.WTeamID < T.LTeamID) AS UNSIGNED) AS Win,
-    WLM1.AvgWinMargin AS AvgWinMargin1,
-    WLM1.AvgLoseMargin AS AvgLoseMargin1,
-    SS1.TwoPointPct AS TwoPointPct1,
-    SS1.ThreePointPct AS ThreePointPct1,
-    SS1.FreeThrowPct AS FreeThrowPct1,
-    SS1.OffensiveRebounds AS OffensiveRebounds1,
-    SS1.DefensiveRebounds AS DefensiveRebounds1,
-    WLM2.AvgWinMargin AS AvgWinMargin2,
-    WLM2.AvgLoseMargin AS AvgLoseMargin2,
-    SS2.TwoPointPct AS TwoPointPct2,
-    SS2.ThreePointPct AS ThreePointPct2,
-    SS2.FreeThrowPct AS FreeThrowPct2,
-    SS2.OffensiveRebounds AS OffensiveRebounds2,
-    SS2.DefensiveRebounds AS DefensiveRebounds2
+SELECT
+    T.Season,
+    CASE WHEN T.WTeamID < T.LTeamID THEN T.WTeamID ELSE T.LTeamID END AS Team1,
+    CASE WHEN T.WTeamID > T.LTeamID THEN T.WTeamID ELSE T.LTeamID END AS Team2,
+    CAST( (T.WTeamID < T.LTeamID) AS UNSIGNED) AS Win,
+    WLM1.AvgWinMargin AS AvgWinMarginW,
+    WLM1.AvgLoseMargin AS AvgLoseMarginW,
+    SS1.TwoPointPct AS TwoPointPctW,
+    SS1.ThreePointPct AS ThreePointPctW,
+    SS1.FreeThrowPct AS FreeThrowPctW,
+    SS1.OffensiveRebounds AS OffensiveReboundsW,
+    SS1.DefensiveRebounds AS DefensiveReboundsW,
+    WLM2.AvgWinMargin AS AvgWinMarginL,
+    WLM2.AvgLoseMargin AS AvgLoseMarginL,
+    SS2.TwoPointPct AS TwoPointPctL,
+    SS2.ThreePointPct AS ThreePointPctL,
+    SS2.FreeThrowPct AS FreeThrowPctL,
+    SS2.OffensiveRebounds AS OffensiveReboundsL,
+    SS2.DefensiveRebounds AS DefensiveReboundsL
 FROM TourneyDetailedResults T
 INNER JOIN vWinLoseMargins WLM1 ON ( (T.WTeamID = WLM1.TeamID) AND (T.Season = WLM1.Season) )
 INNER JOIN vWinLoseMargins WLM2 ON ( (T.LTeamID = WLM2.TeamID) AND (T.Season = WLM2.Season) )
-INNER JOIN vSeasonStatistics SS1 ON ( (T.LTeamID = SS1.TeamID) AND (T.Season = SS1.Season) )
+INNER JOIN vSeasonStatistics SS1 ON ( (T.WTeamID = SS1.TeamID) AND (T.Season = SS1.Season) )
 INNER JOIN vSeasonStatistics SS2 ON ( (T.LTeamID = SS2.TeamID) AND (T.Season = SS2.Season) );
 
 #-----------------------------------------------------------------
@@ -244,3 +246,4 @@ INNER JOIN Teams T ON M.TeamID = T.TeamID
 WHERE M.RankingDayNum=(SELECT MAX(RankingDayNum) FROM MasseyOrdinals)
 GROUP BY M.Season, M.TeamID
 ORDER BY M.Season, AvgRank;
+
