@@ -1,4 +1,4 @@
-﻿﻿﻿#-----------------------------------------------------------------
+﻿﻿#-----------------------------------------------------------------
 # Databases
 #-----------------------------------------------------------------
 
@@ -171,20 +171,20 @@ SELECT
     CASE WHEN R.WTeamID < R.LTeamID THEN R.WTeamID ELSE R.LTeamID END AS Team1,
     CASE WHEN R.WTeamID > R.LTeamID THEN R.WTeamID ELSE R.LTeamID END AS Team2,
     CAST( (R.WTeamID < R.LTeamID) AS UNSIGNED) AS Win,
-    WLM1.AvgWinMargin AS AvgWinMarginW,
-    WLM1.AvgLoseMargin AS AvgLoseMarginW,
-    SS1.TwoPointPct AS TwoPointPctW,
-    SS1.ThreePointPct AS ThreePointPctW,
-    SS1.FreeThrowPct AS FreeThrowPctW,
-    SS1.OffensiveRebounds AS OffensiveReboundsW,
-    SS1.DefensiveRebounds AS DefensiveReboundsW,
-    WLM2.AvgWinMargin AS AvgWinMarginL,
-    WLM2.AvgLoseMargin AS AvgLoseMarginL,
-    SS2.TwoPointPct AS TwoPointPctL,
-    SS2.ThreePointPct AS ThreePointPctL,
-    SS2.FreeThrowPct AS FreeThrowPctL,
-    SS2.OffensiveRebounds AS OffensiveReboundsL,
-    SS2.DefensiveRebounds AS DefensiveReboundsL
+    CASE WHEN R.WTeamID < R.LTeamID THEN WLM1.AvgWinMargin ELSE WLM2.AvgWinMargin END AS AvgWinMargin1,
+    CASE WHEN R.WTeamID < R.LTeamID THEN WLM1.AvgLoseMargin ELSE WLM2.AvgLoseMargin END AS AvgLoseMargin1,
+    CASE WHEN R.WTeamID < R.LTeamID THEN SS1.TwoPointPct ELSE SS2.TwoPointPct END AS TwoPointPct1,
+    CASE WHEN R.WTeamID < R.LTeamID THEN SS1.ThreePointPct ELSE SS2.ThreePointPct END AS ThreePointPct1,
+    CASE WHEN R.WTeamID < R.LTeamID THEN SS1.FreeThrowPct ELSE SS2.FreeThrowPct END AS FreeThrowPct1,
+    CASE WHEN R.WTeamID < R.LTeamID THEN SS1.OffensiveRebounds ELSE SS2.OffensiveRebounds END AS OffensiveRebounds1,
+    CASE WHEN R.WTeamID < R.LTeamID THEN SS1.DefensiveRebounds ELSE SS2.DefensiveRebounds END AS DefensiveRebounds1,
+    CASE WHEN R.WTeamID > R.LTeamID THEN WLM1.AvgWinMargin ELSE WLM2.AvgWinMargin END AS AvgWinMargin2,
+    CASE WHEN R.WTeamID > R.LTeamID THEN WLM1.AvgLoseMargin ELSE WLM2.AvgLoseMargin END AS AvgLoseMargin2,
+    CASE WHEN R.WTeamID > R.LTeamID THEN SS1.TwoPointPct ELSE SS2.TwoPointPct END AS TwoPointPct2,
+    CASE WHEN R.WTeamID > R.LTeamID THEN SS1.ThreePointPct ELSE SS2.ThreePointPct END AS ThreePointPct2,
+    CASE WHEN R.WTeamID > R.LTeamID THEN SS1.FreeThrowPct ELSE SS2.FreeThrowPct END AS FreeThrowPct2,
+    CASE WHEN R.WTeamID > R.LTeamID THEN SS1.OffensiveRebounds ELSE SS2.OffensiveRebounds END AS OffensiveRebounds2,
+    CASE WHEN R.WTeamID > R.LTeamID THEN SS1.DefensiveRebounds ELSE SS2.DefensiveRebounds END AS DefensiveRebounds2
 FROM RegSeasonDetailedResults R
 INNER JOIN vWinLoseMargins WLM1 ON ( (R.WTeamID = WLM1.TeamID) AND (R.Season = WLM1.Season) )
 INNER JOIN vWinLoseMargins WLM2 ON ( (R.LTeamID = WLM2.TeamID) AND (R.Season = WLM2.Season) )
@@ -200,20 +200,20 @@ SELECT
     CASE WHEN T.WTeamID < T.LTeamID THEN T.WTeamID ELSE T.LTeamID END AS Team1,
     CASE WHEN T.WTeamID > T.LTeamID THEN T.WTeamID ELSE T.LTeamID END AS Team2,
     CAST( (T.WTeamID < T.LTeamID) AS UNSIGNED) AS Win,
-    WLM1.AvgWinMargin AS AvgWinMarginW,
-    WLM1.AvgLoseMargin AS AvgLoseMarginW,
-    SS1.TwoPointPct AS TwoPointPctW,
-    SS1.ThreePointPct AS ThreePointPctW,
-    SS1.FreeThrowPct AS FreeThrowPctW,
-    SS1.OffensiveRebounds AS OffensiveReboundsW,
-    SS1.DefensiveRebounds AS DefensiveReboundsW,
-    WLM2.AvgWinMargin AS AvgWinMarginL,
-    WLM2.AvgLoseMargin AS AvgLoseMarginL,
-    SS2.TwoPointPct AS TwoPointPctL,
-    SS2.ThreePointPct AS ThreePointPctL,
-    SS2.FreeThrowPct AS FreeThrowPctL,
-    SS2.OffensiveRebounds AS OffensiveReboundsL,
-    SS2.DefensiveRebounds AS DefensiveReboundsL
+    CASE WHEN T.WTeamID < T.LTeamID THEN WLM1.AvgWinMargin ELSE WLM2.AvgWinMargin END AS AvgWinMargin1,
+    CASE WHEN T.WTeamID < T.LTeamID THEN WLM1.AvgLoseMargin ELSE WLM2.AvgLoseMargin END AS AvgLoseMargin1,
+    CASE WHEN T.WTeamID < T.LTeamID THEN SS1.TwoPointPct ELSE SS2.TwoPointPct END AS TwoPointPct1,
+    CASE WHEN T.WTeamID < T.LTeamID THEN SS1.ThreePointPct ELSE SS2.ThreePointPct END AS ThreePointPct1,
+    CASE WHEN T.WTeamID < T.LTeamID THEN SS1.FreeThrowPct ELSE SS2.FreeThrowPct END AS FreeThrowPct1,
+    CASE WHEN T.WTeamID < T.LTeamID THEN SS1.OffensiveRebounds ELSE SS2.OffensiveRebounds END AS OffensiveRebounds1,
+    CASE WHEN T.WTeamID < T.LTeamID THEN SS1.DefensiveRebounds ELSE SS2.DefensiveRebounds END AS DefensiveRebounds1,
+    CASE WHEN T.WTeamID > T.LTeamID THEN WLM1.AvgWinMargin ELSE WLM2.AvgWinMargin END AS AvgWinMargin2,
+    CASE WHEN T.WTeamID > T.LTeamID THEN WLM1.AvgLoseMargin ELSE WLM2.AvgLoseMargin END AS AvgLoseMargin2,
+    CASE WHEN T.WTeamID > T.LTeamID THEN SS1.TwoPointPct ELSE SS2.TwoPointPct END AS TwoPointPct2,
+    CASE WHEN T.WTeamID > T.LTeamID THEN SS1.ThreePointPct ELSE SS2.ThreePointPct END AS ThreePointPct2,
+    CASE WHEN T.WTeamID > T.LTeamID THEN SS1.FreeThrowPct ELSE SS2.FreeThrowPct END AS FreeThrowPct2,
+    CASE WHEN T.WTeamID > T.LTeamID THEN SS1.OffensiveRebounds ELSE SS2.OffensiveRebounds END AS OffensiveRebounds2,
+    CASE WHEN T.WTeamID > T.LTeamID THEN SS1.DefensiveRebounds ELSE SS2.DefensiveRebounds END AS DefensiveRebounds2
 FROM TourneyDetailedResults T
 INNER JOIN vWinLoseMargins WLM1 ON ( (T.WTeamID = WLM1.TeamID) AND (T.Season = WLM1.Season) )
 INNER JOIN vWinLoseMargins WLM2 ON ( (T.LTeamID = WLM2.TeamID) AND (T.Season = WLM2.Season) )
@@ -246,4 +246,6 @@ INNER JOIN Teams T ON M.TeamID = T.TeamID
 WHERE M.RankingDayNum=(SELECT MAX(RankingDayNum) FROM MasseyOrdinals)
 GROUP BY M.Season, M.TeamID
 ORDER BY M.Season, AvgRank;
+
+
 
