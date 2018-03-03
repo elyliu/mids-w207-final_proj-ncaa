@@ -1,4 +1,4 @@
-﻿﻿#-----------------------------------------------------------------
+﻿#-----------------------------------------------------------------
 # Databases
 #-----------------------------------------------------------------
 
@@ -118,6 +118,49 @@ ENCLOSED BY '"'
 LINES TERMINATED BY '\n'
 IGNORE 1 ROWS;
 
+# Daily ranking table for looking up the ranking for each team on a daily basis
+CREATE TABLE DailyRanking
+SELECT M.Season, T.TeamID, T.TeamName, M.RankingDayNum AS DayNum, AVG(M.OrdinalRank) AS AvgRank
+FROM MasseyOrdinals M
+INNER JOIN Teams T ON M.TeamID = T.TeamID
+GROUP BY M.Season, M.TeamID, M.RankingDayNum
+ORDER BY M.Season, M.TeamID, M.RankingDayNum;
+
+#-----------------------------------------------------------------
+# Functions
+#-----------------------------------------------------------------
+
+#-----------------------------------------
+# Daily ranking function
+#-----------------------------------------
+
+DELIMITER //
+CREATE FUNCTION GetRankForTeamSeasonDay(TeamIDToFind INT, SeasonToFind INT, DayNumToFind INT)
+RETURNS FLOAT
+BEGIN
+    DECLARE DayFound INT;
+    DECLARE AvgRankFound FLOAT;
+
+    # Find the ranking day equal to the day to be found, or a previous day
+    SELECT MAX(RankingDayNum) INTO DayFound
+    FROM MasseyOrdinals
+    WHERE (Season=SeasonToFind) AND (TeamID=TeamIDToFind) AND (RankingDayNum <= DayNumToFind);
+
+    # If a day cannot be found, then find the next ranking day
+    IF DayFound IS NULL THEN
+        SELECT MIN(RankingDayNum) INTO DayFound
+        FROM MasseyOrdinals
+        WHERE (Season=SeasonToFind) AND (TeamID=TeamIDToFind);
+    END IF;
+
+    SELECT AvgRank INTO AvgRankFound
+    FROM DailyRanking
+    WHERE (Season=SeasonToFind) AND (TeamID=TeamIDToFind) AND (DayNum=DayFound);
+
+    RETURN AvgRankFound;
+END//
+DELIMITER ;
+
 #-----------------------------------------------------------------
 # Views
 #-----------------------------------------------------------------
@@ -191,6 +234,34 @@ INNER JOIN vWinLoseMargins WLM2 ON ( (R.LTeamID = WLM2.TeamID) AND (R.Season = W
 INNER JOIN vSeasonStatistics SS1 ON ( (R.WTeamID = SS1.TeamID) AND (R.Season = SS1.Season) )
 INNER JOIN vSeasonStatistics SS2 ON ( (R.LTeamID = SS2.TeamID) AND (R.Season = SS2.Season) );
 
+CREATE VIEW vTrainingTableWithRank AS
+SELECT
+    R.Season,
+    CASE WHEN R.WTeamID < R.LTeamID THEN R.WTeamID ELSE R.LTeamID END AS Team1,
+    CASE WHEN R.WTeamID > R.LTeamID THEN R.WTeamID ELSE R.LTeamID END AS Team2,
+    CAST( (R.WTeamID < R.LTeamID) AS UNSIGNED) AS Win,
+    CASE WHEN R.WTeamID < R.LTeamID THEN WLM1.AvgWinMargin ELSE WLM2.AvgWinMargin END AS AvgWinMargin1,
+    CASE WHEN R.WTeamID < R.LTeamID THEN WLM1.AvgLoseMargin ELSE WLM2.AvgLoseMargin END AS AvgLoseMargin1,
+    CASE WHEN R.WTeamID < R.LTeamID THEN SS1.TwoPointPct ELSE SS2.TwoPointPct END AS TwoPointPct1,
+    CASE WHEN R.WTeamID < R.LTeamID THEN SS1.ThreePointPct ELSE SS2.ThreePointPct END AS ThreePointPct1,
+    CASE WHEN R.WTeamID < R.LTeamID THEN SS1.FreeThrowPct ELSE SS2.FreeThrowPct END AS FreeThrowPct1,
+    CASE WHEN R.WTeamID < R.LTeamID THEN SS1.OffensiveRebounds ELSE SS2.OffensiveRebounds END AS OffensiveRebounds1,
+    CASE WHEN R.WTeamID < R.LTeamID THEN SS1.DefensiveRebounds ELSE SS2.DefensiveRebounds END AS DefensiveRebounds1,
+    CASE WHEN R.WTeamID < R.LTeamID THEN GetRankForTeamSeasonDay(R.WTeamID, R.Season, R.DayNum) ELSE GetRankForTeamSeasonDay(R.LTeamID, R.Season, R.DayNum) END AS Rank1,
+    CASE WHEN R.WTeamID > R.LTeamID THEN WLM1.AvgWinMargin ELSE WLM2.AvgWinMargin END AS AvgWinMargin2,
+    CASE WHEN R.WTeamID > R.LTeamID THEN WLM1.AvgLoseMargin ELSE WLM2.AvgLoseMargin END AS AvgLoseMargin2,
+    CASE WHEN R.WTeamID > R.LTeamID THEN SS1.TwoPointPct ELSE SS2.TwoPointPct END AS TwoPointPct2,
+    CASE WHEN R.WTeamID > R.LTeamID THEN SS1.ThreePointPct ELSE SS2.ThreePointPct END AS ThreePointPct2,
+    CASE WHEN R.WTeamID > R.LTeamID THEN SS1.FreeThrowPct ELSE SS2.FreeThrowPct END AS FreeThrowPct2,
+    CASE WHEN R.WTeamID > R.LTeamID THEN SS1.OffensiveRebounds ELSE SS2.OffensiveRebounds END AS OffensiveRebounds2,
+    CASE WHEN R.WTeamID > R.LTeamID THEN SS1.DefensiveRebounds ELSE SS2.DefensiveRebounds END AS DefensiveRebounds2,
+    CASE WHEN R.WTeamID > R.LTeamID THEN GetRankForTeamSeasonDay(R.WTeamID, R.Season, R.DayNum) ELSE GetRankForTeamSeasonDay(R.LTeamID, R.Season, R.DayNum) END AS Rank2
+FROM RegSeasonDetailedResults R
+INNER JOIN vWinLoseMargins WLM1 ON ( (R.WTeamID = WLM1.TeamID) AND (R.Season = WLM1.Season) )
+INNER JOIN vWinLoseMargins WLM2 ON ( (R.LTeamID = WLM2.TeamID) AND (R.Season = WLM2.Season) )
+INNER JOIN vSeasonStatistics SS1 ON ( (R.WTeamID = SS1.TeamID) AND (R.Season = SS1.Season) )
+INNER JOIN vSeasonStatistics SS2 ON ( (R.LTeamID = SS2.TeamID) AND (R.Season = SS2.Season) );
+
 #-----------------------------------------
 # Create test view
 #-----------------------------------------
@@ -214,6 +285,34 @@ SELECT
     CASE WHEN T.WTeamID > T.LTeamID THEN SS1.FreeThrowPct ELSE SS2.FreeThrowPct END AS FreeThrowPct2,
     CASE WHEN T.WTeamID > T.LTeamID THEN SS1.OffensiveRebounds ELSE SS2.OffensiveRebounds END AS OffensiveRebounds2,
     CASE WHEN T.WTeamID > T.LTeamID THEN SS1.DefensiveRebounds ELSE SS2.DefensiveRebounds END AS DefensiveRebounds2
+FROM TourneyDetailedResults T
+INNER JOIN vWinLoseMargins WLM1 ON ( (T.WTeamID = WLM1.TeamID) AND (T.Season = WLM1.Season) )
+INNER JOIN vWinLoseMargins WLM2 ON ( (T.LTeamID = WLM2.TeamID) AND (T.Season = WLM2.Season) )
+INNER JOIN vSeasonStatistics SS1 ON ( (T.WTeamID = SS1.TeamID) AND (T.Season = SS1.Season) )
+INNER JOIN vSeasonStatistics SS2 ON ( (T.LTeamID = SS2.TeamID) AND (T.Season = SS2.Season) );
+
+CREATE VIEW vTestTableWithRank AS
+SELECT
+    T.Season,
+    CASE WHEN T.WTeamID < T.LTeamID THEN T.WTeamID ELSE T.LTeamID END AS Team1,
+    CASE WHEN T.WTeamID > T.LTeamID THEN T.WTeamID ELSE T.LTeamID END AS Team2,
+    CAST( (T.WTeamID < T.LTeamID) AS UNSIGNED) AS Win,
+    CASE WHEN T.WTeamID < T.LTeamID THEN WLM1.AvgWinMargin ELSE WLM2.AvgWinMargin END AS AvgWinMargin1,
+    CASE WHEN T.WTeamID < T.LTeamID THEN WLM1.AvgLoseMargin ELSE WLM2.AvgLoseMargin END AS AvgLoseMargin1,
+    CASE WHEN T.WTeamID < T.LTeamID THEN SS1.TwoPointPct ELSE SS2.TwoPointPct END AS TwoPointPct1,
+    CASE WHEN T.WTeamID < T.LTeamID THEN SS1.ThreePointPct ELSE SS2.ThreePointPct END AS ThreePointPct1,
+    CASE WHEN T.WTeamID < T.LTeamID THEN SS1.FreeThrowPct ELSE SS2.FreeThrowPct END AS FreeThrowPct1,
+    CASE WHEN T.WTeamID < T.LTeamID THEN SS1.OffensiveRebounds ELSE SS2.OffensiveRebounds END AS OffensiveRebounds1,
+    CASE WHEN T.WTeamID < T.LTeamID THEN SS1.DefensiveRebounds ELSE SS2.DefensiveRebounds END AS DefensiveRebounds1,
+    CASE WHEN T.WTeamID < T.LTeamID THEN GetRankForTeamSeasonDay(T.WTeamID, T.Season, 133) ELSE GetRankForTeamSeasonDay(T.LTeamID, T.Season, 133) END AS Rank1,
+    CASE WHEN T.WTeamID > T.LTeamID THEN WLM1.AvgWinMargin ELSE WLM2.AvgWinMargin END AS AvgWinMargin2,
+    CASE WHEN T.WTeamID > T.LTeamID THEN WLM1.AvgLoseMargin ELSE WLM2.AvgLoseMargin END AS AvgLoseMargin2,
+    CASE WHEN T.WTeamID > T.LTeamID THEN SS1.TwoPointPct ELSE SS2.TwoPointPct END AS TwoPointPct2,
+    CASE WHEN T.WTeamID > T.LTeamID THEN SS1.ThreePointPct ELSE SS2.ThreePointPct END AS ThreePointPct2,
+    CASE WHEN T.WTeamID > T.LTeamID THEN SS1.FreeThrowPct ELSE SS2.FreeThrowPct END AS FreeThrowPct2,
+    CASE WHEN T.WTeamID > T.LTeamID THEN SS1.OffensiveRebounds ELSE SS2.OffensiveRebounds END AS OffensiveRebounds2,
+    CASE WHEN T.WTeamID > T.LTeamID THEN SS1.DefensiveRebounds ELSE SS2.DefensiveRebounds END AS DefensiveRebounds2,
+    CASE WHEN T.WTeamID > T.LTeamID THEN GetRankForTeamSeasonDay(T.WTeamID, T.Season, 133) ELSE GetRankForTeamSeasonDay(T.LTeamID, T.Season, 133) END AS Rank2
 FROM TourneyDetailedResults T
 INNER JOIN vWinLoseMargins WLM1 ON ( (T.WTeamID = WLM1.TeamID) AND (T.Season = WLM1.Season) )
 INNER JOIN vWinLoseMargins WLM2 ON ( (T.LTeamID = WLM2.TeamID) AND (T.Season = WLM2.Season) )
@@ -246,6 +345,8 @@ INNER JOIN Teams T ON M.TeamID = T.TeamID
 WHERE M.RankingDayNum=(SELECT MAX(RankingDayNum) FROM MasseyOrdinals)
 GROUP BY M.Season, M.TeamID
 ORDER BY M.Season, AvgRank;
+
+
 
 
 
