@@ -91,7 +91,7 @@ CREATE TABLE IF NOT EXISTS prod."MasseyOrdinals" (
 )
 ;
 
--- -- Features Table
+-- -- Features Example Table
 -- CREATE TABLE IF NOT EXISTS features_example (
 --   "Season" INT,
 --   "DayNum" INT,
@@ -105,3 +105,24 @@ CREATE TABLE IF NOT EXISTS prod."MasseyOrdinals" (
 --   holdout INT
 -- )
 -- ;
+
+-- Features Table
+CREATE TABLE IF NOT EXISTS prod.features (
+  "Season" integer NOT NULL,
+  "DayNum" integer NOT NULL,
+  "Team" integer NOT NULL,
+  "Opponent" integer NOT NULL,
+  "Outcome" integer NOT NULL,
+  "Score" integer,
+  "OpponentScore" integer,
+  "NumOT" integer,
+  "WLoc" character varying COLLATE pg_catalog."default",
+  "Season Type" character varying COLLATE pg_catalog."default",
+  CONSTRAINT features_pkey PRIMARY KEY (
+    "Season",
+    "DayNum",
+    "Team",
+    "Opponent"
+  )
+)
+;
