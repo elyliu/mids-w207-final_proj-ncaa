@@ -39,9 +39,12 @@ CREATE TABLE IF NOT EXISTS prod."RegSeasonDetailedResults" (
   "LFTA" INT, "LOR" INT, "LDR" INT, "LAst" INT, "LTO" INT,
   "LStl" INT, "LBlk" INT, "LPF" INT
   
-  -- two pointers (generate this later)
-  --WFGM2 INT, WFGA2 INT,
-  --LFGM2 INT, LFGA2 INT
+  CONSTRAINT "RegSeason_pkey" PRIMARY KEY (
+    "Season",
+    "DayNum",
+    "WTeamID",
+    "LTeamID"
+  )
 )
 ;
 
@@ -59,6 +62,13 @@ CREATE TABLE IF NOT EXISTS prod."TourneyDetailedResults" (
   "LFGM" INT, "LFGA" INT, "LFGM3" INT, "LFGA3" INT, "LFTM" INT,
   "LFTA" INT, "LOR" INT, "LDR" INT, "LAst" INT, "LTO" INT,
   "LStl" INT, "LBlk" INT, "LPF" INT
+  
+  CONSTRAINT "Tourney_pkey" PRIMARY KEY (
+    "Season",
+    "DayNum",
+    "WTeamID",
+    "LTeamID"
+  )
 )
 ;
 
