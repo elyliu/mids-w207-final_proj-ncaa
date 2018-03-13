@@ -1,0 +1,150 @@
+------------------------------------------------------------------------------------
+ConferenceTourneyGames
+
+1. Truncate the existing table:
+
+TRUNCATE "ConferenceTourneyGames";
+
+2. Import the new data
+
+------------------------------------------------------------------------------------
+TourneySeeds
+
+1. Create a temp table
+
+CREATE TABLE IF NOT EXISTS "TourneySeeds_2018" (
+  "Season" INT,
+  "Seed" VARCHAR(5),
+  "TeamID" INT
+  --SeedNo INT
+)
+;
+
+2. Import new data into the temp table
+
+3. Insert from the temp table to the existing table
+
+INSERT INTO "TourneySeeds"
+SELECT * FROM "TourneySeeds_2018"
+WHERE "Season"=2018;
+
+------------------------------------------------------------------------------------
+Teams
+
+1. Truncate the existing table:
+
+TRUNCATE "Teams";
+
+2. Import the new data
+
+------------------------------------------------------------------------------------
+RegSeasonDetailedResults
+
+1. Create a temp table
+
+CREATE TABLE IF NOT EXISTS "RegSeasonDetailedResults_2018" (
+  "Season" INT, "DayNum" INT, "WTeamID" INT, "WScore" INT,
+  "LTeamID" INT, "LScore" INT, "WLoc" CHAR(1), "NumOT" INT,
+  
+  -- winning team stats
+  "WFGM" INT, "WFGA" INT, "WFGM3" INT, "WFGA3" INT, "WFTM" INT,
+  "WFTA" INT, "WOR" INT, "WDR" INT, "WAst" INT, "WTO" INT,
+  "WStl" INT, "WBlk" INT, "WPF" INT,
+  
+  -- losing team stats
+  "LFGM" INT, "LFGA" INT, "LFGM3" INT, "LFGA3" INT, "LFTM" INT,
+  "LFTA" INT, "LOR" INT, "LDR" INT, "LAst" INT, "LTO" INT,
+  "LStl" INT, "LBlk" INT, "LPF" INT
+  
+  -- two pointers (generate this later)
+  --WFGM2 INT, WFGA2 INT,
+  --LFGM2 INT, LFGA2 INT
+)
+;
+
+2. Import new data into the temp table
+
+3. Insert from the temp table to the existing table
+
+INSERT INTO "RegSeasonDetailedResults"
+SELECT * FROM "RegSeasonDetailedResults_2018"
+WHERE "Season"=2018;
+
+4. Truncate RegSeasonDetailedResultsCombined:
+
+TRUNCATE RegSeasonDetailedResultsCombined:
+
+5. Insert data into RegSeasonDetailedResultsCombined:
+
+INSERT INTO "RegSeasonDetailedResultsCombined"
+SELECT * FROM (
+SELECT "Season", "DayNum", "WTeamID" AS "TeamID", "WScore" AS "Score", 1 AS "Win", "WLoc" AS "Loc", "NumOT", "WFGM" AS "FGM", "WFGA" AS "FGA", "WFGM2" AS "FGM2", "WFGA2" AS "FGA2",
+"WFGM3" AS "FGM3", "WFGA3" AS "FGA3", "WFTM" AS "FTM", "WFTA" AS "FTA", "WOR" AS "OReb", "WDR" AS "DReb", "WAst" AS "Ast", "WTO" AS "TOvr", "WStl" AS "Stl", "WBlk" AS "Blk", "WPF" AS "PF" FROM "RegSeasonDetailedResults"
+UNION
+SELECT "Season", "DayNum", "LTeamID" AS "TeamID", "LScore" AS "Score", 0 AS "Win", "WLoc" AS "Loc", "NumOT", "LFGM" AS "FGM", "LFGA" AS "FGA", "LFGM2" AS "FGM2", "LFGA2" AS "FGA2",
+"LFGM3" AS "FGM3", "LFGA3" AS "FGA3", "LFTM" AS "FTM", "LFTA" AS "FTA", "LOR" AS "OReb", "LDR" AS "DReb", "LAst" AS "Ast", "LTO" AS "TOvr", "LStl" AS "Stl", "LBlk" AS "Blk", "LPF" AS "PF" FROM "RegSeasonDetailedResults"
+) AS Blah;
+
+------------------------------------------------------------------------------------
+features_example
+
+1. Update "features_example".  Note:  Did not update "holdout"
+
+INSERT INTO "features_example"
+SELECT
+"Season",
+"DayNum",
+"WTeamID" AS "Team",
+"LTeamID" AS "Opponent",
+CASE WHEN "WScore" > "LScore" THEN 1 ELSE 0 END AS "Outcome",
+"WScore" AS "Score",
+"LScore" AS "OpponentScore",
+"NumOT",
+"WLoc"::VARCHAR(1) AS "WLoc"
+FROM "RegSeasonDetailedResults"
+WHERE "Season"=2018;
+
+2. Update the statistics in features_example:
+
+UPDATE "features_example" F
+SET "TwoPointPct_Team"=SS."TwoPointPct",
+	"ThreePointPct_Team"=SS."ThreePointPct",
+	"FreeThrowPct_Team"=SS."FreeThrowPct",
+	"OffensiveRebounds_Team"=SS."OffensiveRebounds",
+	"DefensiveRebounds_Team"=SS."DefensiveRebounds"
+FROM "vSeasonStatistics" SS
+WHERE (F."Season" = 2018) AND (F."Season" = SS."Season") AND (F."Team" = SS."TeamID");
+
+UPDATE "features_example" F
+SET "TwoPointPct_Opponent"=SS."TwoPointPct",
+	"ThreePointPct_Opponent"=SS."ThreePointPct",
+	"FreeThrowPct_Opponent"=SS."FreeThrowPct",
+	"OffensiveRebounds_Opponent"=SS."OffensiveRebounds",
+	"DefensiveRebounds_Opponent"=SS."DefensiveRebounds"
+FROM "vSeasonStatistics" SS
+WHERE (F."Season" = 2018) AND (F."Season" = SS."Season") AND(F."Team" = SS."TeamID");
+
+------------------------------------------------------------------------------------
+MasseyOrdinals
+
+1. Create a temp table:
+
+CREATE TABLE IF NOT EXISTS "MasseyOrdinals_2018_128" (
+  "Season" INT,
+  "RankingDayNum" INT,
+  "SystemName" VARCHAR(3),
+  "TeamID" INT,
+  "OrdinalRank" INT
+)
+;
+
+2. Import new data into the temp table
+
+3. Insert data into MasseyOrdinals:
+
+INSERT INTO "MasseyOrdinals"
+SELECT *
+FROM "MasseyOrdinals_2018_128"
+WHERE "Season"=2018;
+
+------------------------------------------------------------------------------------
