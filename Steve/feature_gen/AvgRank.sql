@@ -21,8 +21,8 @@ daily_rank as (
   FROM prod.features as f
   LEFT JOIN rank as r
     ON f."Season" = r."Season" and f."Team" = r."TeamID"
-  WHERE f."DayNum" <= r."RankingDayNum"
-  ORDER BY f."Season", f."DayNum", f."Team", r."RankingDayNum"
+  WHERE f."DayNum" >= r."RankingDayNum"
+  ORDER BY f."Season", f."DayNum", f."Team", r."RankingDayNum" DESC
 )
 UPDATE prod.features as t
 SET "AvgRank" = dr."AvgRank"
@@ -76,8 +76,8 @@ daily_rank as (
   FROM prod.features as f
   LEFT JOIN rank as r
     ON f."Season" = r."Season" and f."Opponent" = r."TeamID"
-  WHERE f."DayNum" <= r."RankingDayNum"
-  ORDER BY f."Season", f."DayNum", f."Opponent", r."RankingDayNum"
+  WHERE f."DayNum" >= r."RankingDayNum"
+  ORDER BY f."Season", f."DayNum", f."Opponent", r."RankingDayNum" DESC
 )
 UPDATE prod.features as t
 SET "OpponentAvgRank" = dr."AvgRank"
