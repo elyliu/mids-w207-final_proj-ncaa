@@ -25,11 +25,11 @@ daily_rank as (
   ORDER BY f."Season", f."DayNum", f."Team", r."RankingDayNum"
 )
 UPDATE prod.features as t
-SET "AvgRank" = r."AvgRank"
-FROM daily_rank as r
-WHERE t."Season" = r."Season" AND
-  t."DayNum" = r."DayNum" AND
-  t."Team" = r."Team"
+SET "AvgRank" = dr."AvgRank"
+FROM daily_rank as dr
+WHERE t."Season" = dr."Season" AND
+  t."DayNum" = dr."DayNum" AND
+  t."Team" = dr."Team"
 ;
 
 -- NCAA Tourney Average Ranking
@@ -80,11 +80,11 @@ daily_rank as (
   ORDER BY f."Season", f."DayNum", f."Opponent", r."RankingDayNum"
 )
 UPDATE prod.features as t
-SET "OpponentAvgRank" = r."AvgRank"
-FROM daily_rank as r
-WHERE t."Season" = r."Season" AND
-  t."DayNum" = r."DayNum" AND
-  t."Team" = r."Opponent"
+SET "OpponentAvgRank" = dr."AvgRank"
+FROM daily_rank as dr
+WHERE t."Season" = dr."Season" AND
+  t."DayNum" = dr."DayNum" AND
+  t."Opponent" = dr."Opponent"
 ;
 
 -- NCAA Tourney Opponent Average Ranking
