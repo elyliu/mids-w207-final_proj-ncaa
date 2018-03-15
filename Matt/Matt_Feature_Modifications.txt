@@ -3,78 +3,87 @@
 
 1. Add columns to RegSeasonDetailedResults:
 
-ALTER TABLE "RegSeasonDetailedResults" ADD "WFGM2" INT;
-ALTER TABLE "RegSeasonDetailedResults" ADD "WFGA2" INT;
-ALTER TABLE "RegSeasonDetailedResults" ADD "LFGM2" INT;
-ALTER TABLE "RegSeasonDetailedResults" ADD "LFGA2" INT;
+ALTER TABLE prod."RegSeasonDetailedResults" ADD "WFGM2" INT;
+ALTER TABLE prod."RegSeasonDetailedResults" ADD "WFGA2" INT;
+ALTER TABLE prod."RegSeasonDetailedResults" ADD "LFGM2" INT;
+ALTER TABLE prod."RegSeasonDetailedResults" ADD "LFGA2" INT;
 
 2. Compute the two point columns:
 
-UPDATE "RegSeasonDetailedResults"
+UPDATE prod."RegSeasonDetailedResults"
 SET "WFGM2" = ("WFGM"-"WFGM3"), "WFGA2" = ("WFGA"-"WFGA3"), "LFGM2" = ("LFGM"-"LFGM3"), "LFGA2" = ("LFGA"-"LFGA3");
 
-3. Create the regular season combined table:
+3. Add columns to features table:
 
-CREATE TABLE "RegSeasonDetailedResultsCombined" (
-"Season" INT, "DayNum" INT, "TeamID" INT, "Score" INT, "Win" INT, "Loc" CHAR(1), "NumOT" INT, "FGM" INT, "FGA" INT, "FGM2" INT, "FGA2" INT,
-"FGM3" INT, "FGA3" INT, "FTM" INT, "FTA" INT, "OReb" INT, "DReb" INT, "Ast" INT, "TOvr" INT, "Stl" INT, "Blk" INT, "PF" INT);
+ALTER TABLE prod."features" ADD "TwoPointPct_Team" FLOAT;
+ALTER TABLE prod."features" ADD "ThreePointPct_Team" FLOAT;
+ALTER TABLE prod."features" ADD "FreeThrowPct_Team" FLOAT;
+ALTER TABLE prod."features" ADD "OffensiveRebounds_Team" FLOAT;
+ALTER TABLE prod."features" ADD "DefensiveRebounds_Team" FLOAT;
+ALTER TABLE prod."features" ADD "TwoPointPct_Opponent" FLOAT;
+ALTER TABLE prod."features" ADD "ThreePointPct_Opponent" FLOAT;
+ALTER TABLE prod."features" ADD "FreeThrowPct_Opponent" FLOAT;
+ALTER TABLE prod."features" ADD "OffensiveRebounds_Opponent" FLOAT;
+ALTER TABLE prod."features" ADD "DefensiveRebounds_Opponent" FLOAT;
 
-4. Insert into RegSeasonDetailedResultsCombined
+4. Update the columns in the features table with statistics for Team:
 
-INSERT INTO "RegSeasonDetailedResultsCombined"
-SELECT * FROM (
-SELECT "Season", "DayNum", "WTeamID" AS "TeamID", "WScore" AS "Score", 1 AS "Win", "WLoc" AS "Loc", "NumOT", "WFGM" AS "FGM", "WFGA" AS "FGA", "WFGM2" AS "FGM2", "WFGA2" AS "FGA2",
-"WFGM3" AS "FGM3", "WFGA3" AS "FGA3", "WFTM" AS "FTM", "WFTA" AS "FTA", "WOR" AS "OReb", "WDR" AS "DReb", "WAst" AS "Ast", "WTO" AS "TOvr", "WStl" AS "Stl", "WBlk" AS "Blk", "WPF" AS "PF" FROM "RegSeasonDetailedResults"
-UNION
-SELECT "Season", "DayNum", "LTeamID" AS "TeamID", "LScore" AS "Score", 0 AS "Win", "WLoc" AS "Loc", "NumOT", "LFGM" AS "FGM", "LFGA" AS "FGA", "LFGM2" AS "FGM2", "LFGA2" AS "FGA2",
-"LFGM3" AS "FGM3", "LFGA3" AS "FGA3", "LFTM" AS "FTM", "LFTA" AS "FTA", "LOR" AS "OReb", "LDR" AS "DReb", "LAst" AS "Ast", "LTO" AS "TOvr", "LStl" AS "Stl", "LBlk" AS "Blk", "LPF" AS "PF" FROM "RegSeasonDetailedResults"
-) AS Blah;
-
-5. Create a view vSeasonStatistics:
-
-CREATE VIEW "vSeasonStatistics" AS
-SELECT R."Season",
+WITH regseasondetailedresultscombined as (
+	SELECT "Season", "DayNum", "WTeamID" AS "TeamID", "WScore" AS "Score", 1 AS "Win", "WLoc" AS "Loc", "NumOT", "WFGM" AS "FGM", "WFGA" AS "FGA", "WFGM2" AS "FGM2", "WFGA2" AS "FGA2",
+	"WFGM3" AS "FGM3", "WFGA3" AS "FGA3", "WFTM" AS "FTM", "WFTA" AS "FTA", "WOR" AS "OReb", "WDR" AS "DReb", "WAst" AS "Ast", "WTO" AS "TOvr", "WStl" AS "Stl", "WBlk" AS "Blk", "WPF" AS "PF" FROM prod."RegSeasonDetailedResults"
+	UNION
+	SELECT "Season", "DayNum", "LTeamID" AS "TeamID", "LScore" AS "Score", 0 AS "Win", "WLoc" AS "Loc", "NumOT", "LFGM" AS "FGM", "LFGA" AS "FGA", "LFGM2" AS "FGM2", "LFGA2" AS "FGA2",
+	"LFGM3" AS "FGM3", "LFGA3" AS "FGA3", "LFTM" AS "FTM", "LFTA" AS "FTA", "LOR" AS "OReb", "LDR" AS "DReb", "LAst" AS "Ast", "LTO" AS "TOvr", "LStl" AS "Stl", "LBlk" AS "Blk", "LPF" AS "PF" FROM prod."RegSeasonDetailedResults"
+),
+seasonstatistics as (
+	SELECT
+		R."Season",
 		R."TeamID",
 		AVG(COALESCE("FGM2"::float/NULLIF("FGA2",0),0)) AS "TwoPointPct",
 		AVG(COALESCE("FGM3"::float/NULLIF("FGA3",0),0)) AS "ThreePointPct",
 		AVG(COALESCE("FTM"::float/NULLIF("FTA",0),0)) AS "FreeThrowPct",
 		AVG("OReb") AS "OffensiveRebounds",
 		AVG("DReb") AS "DefensiveRebounds"
-FROM "RegSeasonDetailedResultsCombined" R
-GROUP BY R."Season", R."TeamID"
-ORDER BY R."Season" ASC;
-
-6. Add columns to features_example:
-
-ALTER TABLE "features_example_temp" ADD "TwoPointPct_Team" FLOAT;
-ALTER TABLE "features_example_temp" ADD "ThreePointPct_Team" FLOAT;
-ALTER TABLE "features_example_temp" ADD "FreeThrowPct_Team" FLOAT;
-ALTER TABLE "features_example_temp" ADD "OffensiveRebounds_Team" FLOAT;
-ALTER TABLE "features_example_temp" ADD "DefensiveRebounds_Team" FLOAT;
-ALTER TABLE "features_example_temp" ADD "TwoPointPct_Opponent" FLOAT;
-ALTER TABLE "features_example_temp" ADD "ThreePointPct_Opponent" FLOAT;
-ALTER TABLE "features_example_temp" ADD "FreeThrowPct_Opponent" FLOAT;
-ALTER TABLE "features_example_temp" ADD "OffensiveRebounds_Opponent" FLOAT;
-ALTER TABLE "features_example_temp" ADD "DefensiveRebounds_Opponent" FLOAT;
-
-7. Update the columns in the features_example from vSeasonStatistics:
-
-UPDATE "features_example" F
-SET "TwoPointPct_Team"=SS."TwoPointPct",
+	FROM regseasondetailedresultscombined R
+	GROUP BY R."Season", R."TeamID"
+)
+UPDATE prod."features" F
+	SET "TwoPointPct_Team"=SS."TwoPointPct",
 	"ThreePointPct_Team"=SS."ThreePointPct",
 	"FreeThrowPct_Team"=SS."FreeThrowPct",
 	"OffensiveRebounds_Team"=SS."OffensiveRebounds",
 	"DefensiveRebounds_Team"=SS."DefensiveRebounds"
-FROM "vSeasonStatistics" SS
+FROM seasonstatistics SS
 WHERE (F."Season" = SS."Season") AND (F."Team" = SS."TeamID");
 
-UPDATE "features_example" F
+5. Update the columns in the features table with statistics for Opponent:
+
+WITH regseasondetailedresultscombined as (
+	SELECT "Season", "DayNum", "WTeamID" AS "TeamID", "WScore" AS "Score", 1 AS "Win", "WLoc" AS "Loc", "NumOT", "WFGM" AS "FGM", "WFGA" AS "FGA", "WFGM2" AS "FGM2", "WFGA2" AS "FGA2",
+	"WFGM3" AS "FGM3", "WFGA3" AS "FGA3", "WFTM" AS "FTM", "WFTA" AS "FTA", "WOR" AS "OReb", "WDR" AS "DReb", "WAst" AS "Ast", "WTO" AS "TOvr", "WStl" AS "Stl", "WBlk" AS "Blk", "WPF" AS "PF" FROM prod."RegSeasonDetailedResults"
+	UNION
+	SELECT "Season", "DayNum", "LTeamID" AS "TeamID", "LScore" AS "Score", 0 AS "Win", "WLoc" AS "Loc", "NumOT", "LFGM" AS "FGM", "LFGA" AS "FGA", "LFGM2" AS "FGM2", "LFGA2" AS "FGA2",
+	"LFGM3" AS "FGM3", "LFGA3" AS "FGA3", "LFTM" AS "FTM", "LFTA" AS "FTA", "LOR" AS "OReb", "LDR" AS "DReb", "LAst" AS "Ast", "LTO" AS "TOvr", "LStl" AS "Stl", "LBlk" AS "Blk", "LPF" AS "PF" FROM prod."RegSeasonDetailedResults"
+),
+seasonstatistics as (
+	SELECT
+		R."Season",
+		R."TeamID",
+		AVG(COALESCE("FGM2"::float/NULLIF("FGA2",0),0)) AS "TwoPointPct",
+		AVG(COALESCE("FGM3"::float/NULLIF("FGA3",0),0)) AS "ThreePointPct",
+		AVG(COALESCE("FTM"::float/NULLIF("FTA",0),0)) AS "FreeThrowPct",
+		AVG("OReb") AS "OffensiveRebounds",
+		AVG("DReb") AS "DefensiveRebounds"
+	FROM regseasondetailedresultscombined R
+	GROUP BY R."Season", R."TeamID"
+)
+UPDATE prod."features" F
 SET "TwoPointPct_Opponent"=SS."TwoPointPct",
 	"ThreePointPct_Opponent"=SS."ThreePointPct",
 	"FreeThrowPct_Opponent"=SS."FreeThrowPct",
 	"OffensiveRebounds_Opponent"=SS."OffensiveRebounds",
 	"DefensiveRebounds_Opponent"=SS."DefensiveRebounds"
-FROM "vSeasonStatistics" SS
+FROM seasonstatistics SS
 WHERE (F."Season" = SS."Season") AND (F."Team" = SS."TeamID");
 
 ------------------------------------------------------------------------------------
