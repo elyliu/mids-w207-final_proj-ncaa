@@ -25,50 +25,84 @@ CREATE TABLE IF NOT EXISTS prod."Conferences" (
 ;
 
 -- Regular Season Detailed Results
-CREATE TABLE IF NOT EXISTS prod."RegSeasonDetailedResults" (
-  "Season" INT, "DayNum" INT, "WTeamID" INT, "WScore" INT,
-  "LTeamID" INT, "LScore" INT, "WLoc" CHAR(1), "NumOT" INT,
-  
-  -- winning team stats
-  "WFGM" INT, "WFGA" INT, "WFGM3" INT, "WFGA3" INT, "WFTM" INT,
-  "WFTA" INT, "WOR" INT, "WDR" INT, "WAst" INT, "WTO" INT,
-  "WStl" INT, "WBlk" INT, "WPF" INT,
-  
-  -- losing team stats
-  "LFGM" INT, "LFGA" INT, "LFGM3" INT, "LFGA3" INT, "LFTM" INT,
-  "LFTA" INT, "LOR" INT, "LDR" INT, "LAst" INT, "LTO" INT,
-  "LStl" INT, "LBlk" INT, "LPF" INT
-  
-  CONSTRAINT "RegSeason_pkey" PRIMARY KEY (
-    "Season",
-    "DayNum",
-    "WTeamID",
-    "LTeamID"
-  )
+CREATE TABLE IF NOT EXISTS prod."RegSeasonDetailedResults"
+(
+    "Season" integer NOT NULL,
+    "DayNum" integer NOT NULL,
+    "WTeamID" integer NOT NULL,
+    "WScore" integer,
+    "LTeamID" integer NOT NULL,
+    "LScore" integer,
+    "WLoc" character(1) COLLATE pg_catalog."default",
+    "NumOT" integer,
+    "WFGM" integer,
+    "WFGA" integer,
+    "WFGM3" integer,
+    "WFGA3" integer,
+    "WFTM" integer,
+    "WFTA" integer,
+    "WOR" integer,
+    "WDR" integer,
+    "WAst" integer,
+    "WTO" integer,
+    "WStl" integer,
+    "WBlk" integer,
+    "WPF" integer,
+    "LFGM" integer,
+    "LFGA" integer,
+    "LFGM3" integer,
+    "LFGA3" integer,
+    "LFTM" integer,
+    "LFTA" integer,
+    "LOR" integer,
+    "LDR" integer,
+    "LAst" integer,
+    "LTO" integer,
+    "LStl" integer,
+    "LBlk" integer,
+    "LPF" integer,
+    CONSTRAINT reg_pkey PRIMARY KEY ("Season", "DayNum", "WTeamID", "LTeamID")
 )
 ;
 
 -- Tourney Detailed Results
-CREATE TABLE IF NOT EXISTS prod."TourneyDetailedResults" (
-  "Season" INT, "DayNum" INT, "WTeamID" INT, "WScore" INT,
-  "LTeamID" INT, "LScore" INT, "WLoc" CHAR(1), "NumOT" INT,
-  
-  -- winning team stats
-  "WFGM" INT, "WFGA" INT, "WFGM3" INT, "WFGA3" INT, "WFTM" INT,
-  "WFTA" INT, "WOR" INT, "WDR" INT, "WAst" INT, "WTO" INT,
-  "WStl" INT, "WBlk" INT, "WPF" INT,
-  
-  -- losting team stats
-  "LFGM" INT, "LFGA" INT, "LFGM3" INT, "LFGA3" INT, "LFTM" INT,
-  "LFTA" INT, "LOR" INT, "LDR" INT, "LAst" INT, "LTO" INT,
-  "LStl" INT, "LBlk" INT, "LPF" INT
-  
-  CONSTRAINT "Tourney_pkey" PRIMARY KEY (
-    "Season",
-    "DayNum",
-    "WTeamID",
-    "LTeamID"
-  )
+CREATE TABLE prod."TourneyDetailedResults"
+(
+    "Season" integer NOT NULL,
+    "DayNum" integer NOT NULL,
+    "WTeamID" integer NOT NULL,
+    "WScore" integer,
+    "LTeamID" integer NOT NULL,
+    "LScore" integer,
+    "WLoc" character(1) COLLATE pg_catalog."default",
+    "NumOT" integer,
+    "WFGM" integer,
+    "WFGA" integer,
+    "WFGM3" integer,
+    "WFGA3" integer,
+    "WFTM" integer,
+    "WFTA" integer,
+    "WOR" integer,
+    "WDR" integer,
+    "WAst" integer,
+    "WTO" integer,
+    "WStl" integer,
+    "WBlk" integer,
+    "WPF" integer,
+    "LFGM" integer,
+    "LFGA" integer,
+    "LFGM3" integer,
+    "LFGA3" integer,
+    "LFTM" integer,
+    "LFTA" integer,
+    "LOR" integer,
+    "LDR" integer,
+    "LAst" integer,
+    "LTO" integer,
+    "LStl" integer,
+    "LBlk" integer,
+    "LPF" integer,
+    CONSTRAINT "Tourney_pkey" PRIMARY KEY ("Season", "DayNum", "WTeamID", "LTeamID")
 )
 ;
 
@@ -92,12 +126,14 @@ CREATE TABLE IF NOT EXISTS prod."TourneySeeds" (
 ;
 
 -- Massey Ordinals
-CREATE TABLE IF NOT EXISTS prod."MasseyOrdinals" (
-  "Season" INT,
-  "RankingDayNum" INT,
-  "SystemName" VARCHAR(3),
-  "TeamID" INT,
-  "OrdinalRank" INT
+CREATE TABLE prod."MasseyOrdinals"
+(
+    "Season" integer NOT NULL,
+    "RankingDayNum" integer NOT NULL,
+    "SystemName" character varying(3) COLLATE pg_catalog."default" NOT NULL,
+    "TeamID" integer NOT NULL,
+    "OrdinalRank" integer,
+    CONSTRAINT "Massey_pkey" PRIMARY KEY ("Season", "RankingDayNum", "SystemName", "TeamID")
 )
 ;
 
@@ -122,7 +158,7 @@ CREATE TABLE IF NOT EXISTS prod.features (
   "DayNum" integer NOT NULL,
   "Team" integer NOT NULL,
   "Opponent" integer NOT NULL,
-  "Outcome" integer NOT NULL,
+  "Outcome" integer,
   "Score" integer,
   "OpponentScore" integer,
   "NumOT" integer,
