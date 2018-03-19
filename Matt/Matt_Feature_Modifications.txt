@@ -84,7 +84,7 @@ SET "TwoPointPct_Opponent"=SS."TwoPointPct",
 	"OffensiveRebounds_Opponent"=SS."OffensiveRebounds",
 	"DefensiveRebounds_Opponent"=SS."DefensiveRebounds"
 FROM seasonstatistics SS
-WHERE (F."Season" = SS."Season") AND (F."Team" = SS."TeamID");
+WHERE (F."Season" = SS."Season") AND (F."Opponent" = SS."TeamID");
 
 ------------------------------------------------------------------------------------
 * Add rankings to features_example table (takes a long time to run)
