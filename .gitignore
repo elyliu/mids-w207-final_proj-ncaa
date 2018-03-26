@@ -2,3 +2,4 @@
 Steve/data/*
 data/*
 Steve/.ipynb_checkpoints/*
+Steve/**/.ipynb_checkpoints/*
