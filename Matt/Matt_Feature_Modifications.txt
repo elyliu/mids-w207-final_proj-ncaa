@@ -125,6 +125,171 @@ WHERE F."Season" = SS."Season" AND
 	F."Opponent" = SS."Team" AND
 	F."DayNum" = SS."DayNum"
 ;
+------------------------------------------------------------------------------------
+This script is for the creation of prod."features_tournament" table. The purpose of
+this table is to examine the statistics for past tournament games for EDA.
+
+1. Create prod.features_tournament table:
+
+CREATE TABLE IF NOT EXISTS prod."features_tournament" (
+  "Season" integer NOT NULL,
+  "DayNum" integer NOT NULL,
+  "Team" integer NOT NULL,
+  "Opponent" integer NOT NULL,
+  "Outcome" integer,
+  "Score" integer,
+  "OpponentScore" integer,
+  "NumOT" integer,
+  "WLoc" character varying COLLATE pg_catalog."default",
+  "Season Type" character varying COLLATE pg_catalog."default",
+  "holdout_s1" integer,
+  "holdout_s2" integer,
+  "AvgRank" real,
+  "OpponentAvgRank" real,
+  "TwoPointPct_Team" FLOAT,
+  "ThreePointPct_Team" FLOAT,
+  "FreeThrowPct_Team" FLOAT,
+  "OffensiveRebounds_Team" FLOAT,
+  "DefensiveRebounds_Team" FLOAT,
+  "TwoPointPct_Opponent" FLOAT,
+  "ThreePointPct_Opponent" FLOAT,
+  "FreeThrowPct_Opponent" FLOAT,
+  "OffensiveRebounds_Opponent" FLOAT,
+  "DefensiveRebounds_Opponent" FLOAT,
+  "WinPct" real,
+  "OpponentWinPct" real,
+  "WinPctDiff" real,
+  "AvgPointsFor" real,
+  "AvgPointsAgainst" real,
+  "AvgNetPointsFor" real,
+  "SeedDiff" integer,
+  CONSTRAINT features_tournament_pkey PRIMARY KEY (
+    "Season",
+    "DayNum",
+    "Team",
+    "Opponent"
+  )
+);
+
+2. Copy prod."features" into prod."features_tournament":
+
+INSERT INTO prod."features_tournament"
+SELECT * FROM prod."features";
+
+3. Delete all rows that are "Season Type" = 'Regular':
+
+DELETE FROM prod."features_tournament"
+WHERE "Season Type" = 'Regular';
+
+4. Add columns to TourneyDetailedResults:
+
+ALTER TABLE prod."TourneyDetailedResults" ADD "WFGM2" INT;
+ALTER TABLE prod."TourneyDetailedResults" ADD "WFGA2" INT;
+ALTER TABLE prod."TourneyDetailedResults" ADD "LFGM2" INT;
+ALTER TABLE prod."TourneyDetailedResults" ADD "LFGA2" INT;
+
+5. Compute the two point columns:
+
+UPDATE prod."TourneyDetailedResults"
+SET "WFGM2" = ("WFGM"-"WFGM3"), "WFGA2" = ("WFGA"-"WFGA3"), "LFGM2" = ("LFGM"-"LFGM3"), "LFGA2" = ("LFGA"-"LFGA3");
+
+6. Update the columns in the features table with statistics for Team:
+
+WITH tourneydetailedresultscombined as (
+	SELECT "Season", "DayNum", "WTeamID" AS "TeamID", "WScore" AS "Score", 1 AS "Win", "WLoc" AS "Loc", "NumOT", "WFGM" AS "FGM", "WFGA" AS "FGA", "WFGM2" AS "FGM2", "WFGA2" AS "FGA2",
+	"WFGM3" AS "FGM3", "WFGA3" AS "FGA3", "WFTM" AS "FTM", "WFTA" AS "FTA", "WOR" AS "OReb", "WDR" AS "DReb", "WAst" AS "Ast", "WTO" AS "TOvr", "WStl" AS "Stl", "WBlk" AS "Blk", "WPF" AS "PF" FROM prod."TourneyDetailedResults"
+	UNION
+	SELECT "Season", "DayNum", "LTeamID" AS "TeamID", "LScore" AS "Score", 0 AS "Win", "WLoc" AS "Loc", "NumOT", "LFGM" AS "FGM", "LFGA" AS "FGA", "LFGM2" AS "FGM2", "LFGA2" AS "FGA2",
+	"LFGM3" AS "FGM3", "LFGA3" AS "FGA3", "LFTM" AS "FTM", "LFTA" AS "FTA", "LOR" AS "OReb", "LDR" AS "DReb", "LAst" AS "Ast", "LTO" AS "TOvr", "LStl" AS "Stl", "LBlk" AS "Blk", "LPF" AS "PF" FROM prod."TourneyDetailedResults"
+),
+seasonstatistics as (
+	SELECT
+		R."Season",
+		R."TeamID",
+		R."DayNum",
+		AVG(COALESCE("FGM2"::float/NULLIF("FGA2",0),0)) OVER w AS "TwoPointPct",
+		AVG(COALESCE("FGM3"::float/NULLIF("FGA3",0),0)) OVER w AS "ThreePointPct",
+		AVG(COALESCE("FTM"::float/NULLIF("FTA",0),0)) OVER w AS "FreeThrowPct",
+		AVG("OReb") OVER w AS "OffensiveRebounds",
+		AVG("DReb") OVER w AS "DefensiveRebounds"
+	FROM tourneydetailedresultscombined R
+	WINDOW w as (
+	  PARTITION BY "Season", "TeamID"
+    ORDER BY "DayNum"
+    ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING
+  )
+),
+stats_join as (
+	SELECT DISTINCT ON (f."Season", f."DayNum", f."Team")
+		f."Season", f."DayNum", f."Team",
+		s."TwoPointPct", s."ThreePointPct", s."FreeThrowPct",
+		s."OffensiveRebounds", s."DefensiveRebounds"
+	FROM prod."features_tournament" as f
+	LEFT JOIN seasonstatistics as s
+    ON f."Season" = s."Season" and f."Team" = s."TeamID"
+	WHERE f."DayNum" >= s."DayNum"
+  ORDER BY f."Season", f."DayNum", f."Team", s."DayNum" DESC
+)
+UPDATE prod."features_tournament" F
+SET "TwoPointPct_Team"=SS."TwoPointPct",
+	"ThreePointPct_Team"=SS."ThreePointPct",
+	"FreeThrowPct_Team"=SS."FreeThrowPct",
+	"OffensiveRebounds_Team"=SS."OffensiveRebounds",
+	"DefensiveRebounds_Team"=SS."DefensiveRebounds"
+FROM stats_join SS
+WHERE F."Season" = SS."Season" AND
+	F."Team" = SS."Team" AND
+	F."DayNum" = SS."DayNum"
+;
+
+7. Update the columns in the features table with statistics for Opponent:
+
+WITH tourneydetailedresultscombined as (
+	SELECT "Season", "DayNum", "WTeamID" AS "TeamID", "WScore" AS "Score", 1 AS "Win", "WLoc" AS "Loc", "NumOT", "WFGM" AS "FGM", "WFGA" AS "FGA", "WFGM2" AS "FGM2", "WFGA2" AS "FGA2",
+	"WFGM3" AS "FGM3", "WFGA3" AS "FGA3", "WFTM" AS "FTM", "WFTA" AS "FTA", "WOR" AS "OReb", "WDR" AS "DReb", "WAst" AS "Ast", "WTO" AS "TOvr", "WStl" AS "Stl", "WBlk" AS "Blk", "WPF" AS "PF" FROM prod."TourneyDetailedResults"
+	UNION
+	SELECT "Season", "DayNum", "LTeamID" AS "TeamID", "LScore" AS "Score", 0 AS "Win", "WLoc" AS "Loc", "NumOT", "LFGM" AS "FGM", "LFGA" AS "FGA", "LFGM2" AS "FGM2", "LFGA2" AS "FGA2",
+	"LFGM3" AS "FGM3", "LFGA3" AS "FGA3", "LFTM" AS "FTM", "LFTA" AS "FTA", "LOR" AS "OReb", "LDR" AS "DReb", "LAst" AS "Ast", "LTO" AS "TOvr", "LStl" AS "Stl", "LBlk" AS "Blk", "LPF" AS "PF" FROM prod."TourneyDetailedResults"
+),
+seasonstatistics as (
+	SELECT
+		R."Season",
+		R."TeamID",
+		R."DayNum",
+		AVG(COALESCE("FGM2"::float/NULLIF("FGA2",0),0)) OVER w AS "TwoPointPct",
+		AVG(COALESCE("FGM3"::float/NULLIF("FGA3",0),0)) OVER w AS "ThreePointPct",
+		AVG(COALESCE("FTM"::float/NULLIF("FTA",0),0)) OVER w AS "FreeThrowPct",
+		AVG("OReb") OVER w AS "OffensiveRebounds",
+		AVG("DReb") OVER w AS "DefensiveRebounds"
+	FROM tourneydetailedresultscombined R
+	WINDOW w as (
+	  PARTITION BY "Season", "TeamID"
+    ORDER BY "DayNum"
+    ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING
+  )
+),
+stats_join as (
+	SELECT DISTINCT ON (f."Season", f."DayNum", f."Team")
+		f."Season", f."DayNum", f."Team",
+		s."TwoPointPct", s."ThreePointPct", s."FreeThrowPct",
+		s."OffensiveRebounds", s."DefensiveRebounds"
+	FROM prod."features_tournament" as f
+	LEFT JOIN seasonstatistics as s
+    ON f."Season" = s."Season" and f."Team" = s."TeamID"
+	WHERE f."DayNum" >= s."DayNum"
+  ORDER BY f."Season", f."DayNum", f."Team", s."DayNum" DESC
+)
+UPDATE prod."features_tournament" F
+SET "TwoPointPct_Opponent"=SS."TwoPointPct",
+	"ThreePointPct_Opponent"=SS."ThreePointPct",
+	"FreeThrowPct_Opponent"=SS."FreeThrowPct",
+	"OffensiveRebounds_Opponent"=SS."OffensiveRebounds",
+	"DefensiveRebounds_Opponent"=SS."DefensiveRebounds"
+FROM stats_join SS
+WHERE F."Season" = SS."Season" AND
+	F."Opponent" = SS."Team" AND
+	F."DayNum" = SS."DayNum"
+;
 
 ------------------------------------------------------------------------------------
 * Add rankings to features_example table (takes a long time to run)
